@@ -1,0 +1,84 @@
+Server response status: 200
+
+METADATA:
+{
+  "original_size_bytes": 402348,
+  "processed_size_png_bytes": 33658
+}
+
+=== TESSERACT ===
+duration_sec: 0.3907639980316162
+full_text:
+i; ELECTION COMMISSION OF INDIA
+
+: IDENTITY CARD ve
+|} NCS1694975 = 4!
+
+: ; “AN FL sained
+
+: ‘ie ne ee
+
+: ee are woo. <
+
+i 4 |
+
+: Elector's Name + Yogabrata Chatraborty |
+
+Father'sName + JayantaChakraborty = “|;
+
+: fera/Sex : 44M it
+
+‘ ° ‘
+
+> wa Urea .
+
+: Date of Birth :,,2608/1996 |}
+
+=== EASYOCR ===
+duration_sec: 12.00911569595337
+full_text:
+Gi3coz {ri57 Ffira
+~63 *0
+ELECTION COMMISSION OF INDIA
+IDENTITY CARD
+NCS1694975
+fabrza714
+al7u 644at
+Elector's Namc
+Yogabrata Chakaborty
+ConTN
+GT
+ba4at
+Father's Namc
+Jayanta Chakraborty
+fplSex
+IV M
+57 O1f
+26/08/1996
+Datc of Birth
+
+=== PADDLEOCR ===
+duration_sec: 18.58135747909546
+full_text:
+min
+general
+Hy LaBasa
+969
+ELECTION COMMISSION OF INDIA
+IDENTITY CARD
+NCS1694975
+F64
+C6 60
+•
+Elector's Name
+Yogabrata Chakraborty
+_
+FOERTY
+L
+Father's Name
+Jayanta Chakraborty
+fa/Sex
+I/M
+L
+26/08/1996
+Date of Birth

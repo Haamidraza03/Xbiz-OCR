@@ -378,12 +378,19 @@
   ],
   "document_type": {
     "name": "AADHAAR_CARD",
-    "score": 4,
+    "score": 6,
     "matched_keywords": [
       "aadhaar",
       "Female",
       "DOB",
-      "Male"
-    ]
+      "Male",
+      "12_digit_number"
+    ],
+    "digit12_found": true,
+    "digit12_value": "893831116226",
+    "digit12_text": "8938 3111 6226",
+    "aadhaar_number_found": true,
+    "aadhaar_number": "893831116226",
+    "aadhaar_number_text": "8938 3111 6226"
   }
 }

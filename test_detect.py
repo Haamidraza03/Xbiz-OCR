@@ -10,7 +10,7 @@ OUTPUTS_DIR = os.path.join(PROJECT_ROOT, "outputs")
 os.makedirs(OUTPUTS_DIR, exist_ok=True)
 
 # Put the PNG filename (existing in images folder) here:
-IMAGE_NAME = "samp1.png"   # <- change to the PNG filename in images/
+IMAGE_NAME = "adharsamp.png"   # <- change to the PNG filename in images/
 
 API_URL = "http://127.0.0.1:5000/detect"
 

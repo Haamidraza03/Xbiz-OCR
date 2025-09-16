@@ -541,6 +541,11 @@ def preprocess_image(image_path: str):
         img = cv2.imread(image_path, cv2.IMREAD_COLOR)
         if img is None:
             return image_path
+        # Resize if image is very large (e.g., >3000px in any dimension)
+        max_dim = max(img.shape[:2])
+        if max_dim > 3000:
+            scale = 3000.0 / max_dim
+            img = cv2.resize(img, (int(img.shape[1]*scale), int(img.shape[0]*scale)), interpolation=cv2.INTER_AREA)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
         cl = clahe.apply(gray)
@@ -562,10 +567,11 @@ def run_paddle_and_parse(image_path: str):
     if paddle_ocr is None:
         raise RuntimeError("PaddleOCR not available.")
     try:
+        # Use predict instead of ocr to avoid DeprecationWarning
         try:
-            ocr_res = paddle_ocr.ocr(image_path, cls=True)
+            ocr_res = paddle_ocr.predict(image_path, cls=True)
         except TypeError:
-            ocr_res = paddle_ocr.ocr(image_path)
+            ocr_res = paddle_ocr.predict(image_path)
     except Exception as e:
         raise RuntimeError(f"PaddleOCR failed: {e}")
     parsed_lines = []

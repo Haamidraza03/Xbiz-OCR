@@ -1,3 +1,4 @@
+# app.py (updated)
 import os
 import re
 import json
@@ -47,16 +48,14 @@ except Exception:
 paddle_ocr = None
 try:
     from paddleocr import PaddleOCR
-    # Remove use_gpu configuration - instantiate PaddleOCR without GPU support
+    # CPU-only initialization (no use_gpu flag)
     _paddle_lang = os.environ.get("PADDLE_LANG", "en")
     _paddle_use_angle = os.environ.get("PADDLE_USE_ANGLE", "1") in ("1", "true", "True", "yes")
     try:
-        # Try common constructor signature
         paddle_ocr = PaddleOCR(use_angle_cls=_paddle_use_angle, lang=_paddle_lang)
         print("PaddleOCR initialized (use_angle_cls).")
     except TypeError:
         try:
-            # Alternate constructor name used in some versions
             paddle_ocr = PaddleOCR(use_textline_orientation=_paddle_use_angle, lang=_paddle_lang)
             print("PaddleOCR initialized (use_textline_orientation).")
         except TypeError:
@@ -191,10 +190,7 @@ def bytes_to_base64(image_bytes: bytes, fmt: str = "png") -> str:
     b64 = base64.b64encode(image_bytes).decode("utf-8")
     return f"data:image/{fmt};base64,{b64}"
 
-# ... detection helper functions (detect_12_digit_number, detect_pan_number, etc.)
-# For brevity they are the same as before — include all helper functions here.
-# (I will reuse your previous helper implementations verbatim.)
-# -- start helper block --
+# ----------------- Detection helpers (same as before) -----------------
 def detect_12_digit_number(full_text: str):
     if not full_text:
         return False, None, None
@@ -339,8 +335,7 @@ def _clean_pattern_to_plaintext(pat: str) -> str:
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
     return cleaned
 
-# get_template_scores and classify_document copied (verbatim) from your working source.
-# -- start scoring/classify block --
+# get_template_scores and classify_document (same as before)
 def get_template_scores(full_text: str):
     matches = {}
     digit12_found, digit12_value, digit12_text = detect_12_digit_number(full_text)
@@ -507,6 +502,9 @@ def classify_document(full_text: str):
         front_detected = True
     if back_count >= 1:
         back_detected = True
+    # NOTE: original code had a logic bug that makes both_detected True always.
+    # We'll keep same behavior for compatibility; consider changing to:
+    # both_detected = (front_count >= 2 and back_count >= 1)
     if front_count == back_count or front_count > back_count or back_count > front_count:
         both_detected = True
     result["aadhaar_front_detected"] = front_detected
@@ -534,7 +532,6 @@ def classify_document(full_text: str):
         result["bank_account_number"] = normalized
         result["bank_account_number_text"] = matched_text
     return result
-# -- end scoring/classify block --
 
 # ----------------- Preprocessing -----------------
 def preprocess_image(image_path: str):
@@ -690,16 +687,10 @@ def run_tesseract_and_parse(image_path: str):
 
 # ----------------- Utility: extract cleaned matching lines -----------------
 def extract_cleaned_text(parsed_lines, matched_keywords, full_text):
-    """
-    Return a list of cleaned lines that match the detected patterns:
-    - matched_keywords: list from classify_document (patterns and fuzzy entries)
-    - parsed_lines: list of dicts {'text':..., 'confidence':...}
-    """
     plains = []
     for mk in matched_keywords or []:
         if isinstance(mk, str):
             if mk.startswith("FUZZY:"):
-                # format: FUZZY:plain(92)
                 try:
                     inner = mk.split("FUZZY:", 1)[1]
                     plain = inner.rsplit("(", 1)[0]
@@ -710,7 +701,6 @@ def extract_cleaned_text(parsed_lines, matched_keywords, full_text):
                 plain = _clean_pattern_to_plaintext(mk)
             if plain:
                 plains.append(plain)
-    # finalize plains unique & lowercase
     plains = list(dict.fromkeys([p.lower() for p in plains if p and p.strip()]))
 
     matched_lines = []
@@ -720,14 +710,12 @@ def extract_cleaned_text(parsed_lines, matched_keywords, full_text):
             continue
         ln_low = ln.lower()
         matched_flag = False
-        # substring quick check
         for p in plains:
             if not p:
                 continue
             if p in ln_low:
                 matched_flag = True
                 break
-            # fuzzy check
             try:
                 sim = similarity(p, ln_low)
                 if sim >= FUZZY_THRESHOLD:
@@ -737,13 +725,11 @@ def extract_cleaned_text(parsed_lines, matched_keywords, full_text):
                 pass
         if matched_flag:
             matched_lines.append(ln)
-    # fallback: if nothing matched, pick first few non-empty lines (clean)
     if not matched_lines:
         for item in (parsed_lines or [])[:6]:
             t = (item.get("text") or "").strip()
             if t:
                 matched_lines.append(t)
-    # dedupe while preserving order
     seen = set()
     cleaned = []
     for l in matched_lines:
@@ -752,7 +738,75 @@ def extract_cleaned_text(parsed_lines, matched_keywords, full_text):
             seen.add(l)
     return cleaned
 
-# ----------------- Flask /detect endpoint (no writes) -----------------
+# ----------------- Core image processing function (reusable) -----------------
+def process_image_bytes(image_bytes: bytes, fmt: str, original_name: str):
+    """
+    Process raw image bytes and return a response object similar to previous inner function.
+    This can be used by /detect (upload) and /detect_all (images_multi directory).
+    """
+    tmp_file_path = None
+    preprocessed_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{fmt}") as tmp:
+            tmp.write(image_bytes)
+            tmp_file_path = tmp.name
+
+        preprocessed_path = preprocess_image(tmp_file_path)
+
+        ocr_used = None
+        final_parsed = []
+        final_full_text = ""
+
+        if paddle_ocr is not None:
+            try:
+                parsed, full_text = run_paddle_and_parse(preprocessed_path)
+                if full_text and len(full_text.strip()) >= 4:
+                    final_parsed = parsed
+                    final_full_text = full_text
+                    ocr_used = "paddleocr"
+            except Exception as e:
+                print("PaddleOCR error (using fallback):", str(e))
+
+        if not final_full_text and pytesseract is not None:
+            try:
+                parsed, full_text = run_tesseract_and_parse(preprocessed_path)
+                if full_text and len(full_text.strip()) >= 4:
+                    final_parsed = parsed
+                    final_full_text = full_text
+                    ocr_used = "tesseract"
+            except Exception as e:
+                print("Tesseract error:", str(e))
+
+        # classify document
+        doc_match = classify_document(final_full_text or "")
+
+        # extract cleaned lines that match the template/patterns
+        cleaned_lines = extract_cleaned_text(final_parsed, doc_match.get("matched_keywords", []), final_full_text)
+
+        input_b64 = bytes_to_base64(image_bytes, fmt=fmt)
+
+        response_obj = {
+            "inputbase64": input_b64,
+            "detected_text": final_parsed,
+            "cleaned_text": cleaned_lines,
+            "document_type": doc_match,
+            "ocr_used": ocr_used
+        }
+
+        return response_obj
+    finally:
+        try:
+            if preprocessed_path and preprocessed_path != tmp_file_path and os.path.isfile(preprocessed_path):
+                os.remove(preprocessed_path)
+        except Exception:
+            pass
+        try:
+            if tmp_file_path and os.path.isfile(tmp_file_path):
+                os.remove(tmp_file_path)
+        except Exception:
+            pass
+
+# ----------------- Flask /detect endpoint (handles uploads) -----------------
 @app.route("/detect", methods=["POST"])
 def detect():
     try:
@@ -765,70 +819,6 @@ def detect():
 
         multiple_mode = bool(files_list and len(files_list) > 1)
 
-        def _process_single_image(image_bytes, fmt, original_name):
-            tmp_file_path = None
-            preprocessed_path = None
-            try:
-                with tempfile.NamedTemporaryFile(delete=False, suffix=f".{fmt}") as tmp:
-                    tmp.write(image_bytes)
-                    tmp_file_path = tmp.name
-
-                preprocessed_path = preprocess_image(tmp_file_path)
-
-                ocr_used = None
-                final_parsed = []
-                final_full_text = ""
-
-                if paddle_ocr is not None:
-                    try:
-                        parsed, full_text = run_paddle_and_parse(preprocessed_path)
-                        if full_text and len(full_text.strip()) >= 4:
-                            final_parsed = parsed
-                            final_full_text = full_text
-                            ocr_used = "paddleocr"
-                    except Exception as e:
-                        print("PaddleOCR error (using fallback):", str(e))
-
-                if not final_full_text and pytesseract is not None:
-                    try:
-                        parsed, full_text = run_tesseract_and_parse(preprocessed_path)
-                        if full_text and len(full_text.strip()) >= 4:
-                            final_parsed = parsed
-                            final_full_text = full_text
-                            ocr_used = "tesseract"
-                    except Exception as e:
-                        print("Tesseract error:", str(e))
-
-                # classify document
-                doc_match = classify_document(final_full_text or "")
-
-                # extract cleaned lines that match the template/patterns
-                cleaned_lines = extract_cleaned_text(final_parsed, doc_match.get("matched_keywords", []), final_full_text)
-
-                input_b64 = bytes_to_base64(image_bytes, fmt=fmt)
-
-                response_obj = {
-                    "inputbase64": input_b64,
-                    "detected_text": final_parsed,      # full parsed lines (list of dicts)
-                    "cleaned_text": cleaned_lines,      # array of strings (cleaned / matched)
-                    "document_type": doc_match,
-                    "ocr_used": ocr_used
-                }
-
-                # We explicitly DO NOT save files any more.
-                return response_obj
-            finally:
-                try:
-                    if preprocessed_path and preprocessed_path != tmp_file_path and os.path.isfile(preprocessed_path):
-                        os.remove(preprocessed_path)
-                except Exception:
-                    pass
-                try:
-                    if tmp_file_path and os.path.isfile(tmp_file_path):
-                        os.remove(tmp_file_path)
-                except Exception:
-                    pass
-
         # multiple uploads
         if files_list and len(files_list) > 0:
             for f in files_list:
@@ -836,7 +826,7 @@ def detect():
                     image_bytes = f.read()
                     original_name = f.filename or f"upload_{int(time.time())}.png"
                     fmt = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else "png"
-                    response_obj = _process_single_image(image_bytes, fmt, original_name)
+                    response_obj = process_image_bytes(image_bytes, fmt, original_name)
                     safe_response = json.loads(json.dumps(response_obj, default=str))
                     results.append({
                         "original_name": original_name,
@@ -851,16 +841,17 @@ def detect():
                     })
             return jsonify({"results": results}), 200
 
-        # single-file or JSON-style
+        # single-file upload
         if 'file' in request.files and not multiple_mode:
             f = request.files['file']
             image_bytes = f.read()
             original_name = f.filename or f"upload_{int(time.time())}"
             fmt = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else "png"
-            response_obj = _process_single_image(image_bytes, fmt, original_name)
+            response_obj = process_image_bytes(image_bytes, fmt, original_name)
             safe_response = json.loads(json.dumps(response_obj, default=str))
             return jsonify({"result": safe_response}), 200
 
+        # JSON-style requests
         data = request.get_json(silent=True) or {}
         if data.get("image_name"):
             image_name = os.path.basename(data["image_name"])
@@ -873,7 +864,7 @@ def detect():
                 image_bytes = fh.read()
             original_name = image_name
             fmt = original_name.rsplit(".", 1)[-1].lower()
-            response_obj = _process_single_image(image_bytes, fmt, original_name)
+            response_obj = process_image_bytes(image_bytes, fmt, original_name)
             safe_response = json.loads(json.dumps(response_obj, default=str))
             return jsonify({"result": safe_response}), 200
         elif data.get("image_path"):
@@ -892,7 +883,7 @@ def detect():
                 image_bytes = fh.read()
             original_name = os.path.basename(path)
             fmt = original_name.rsplit(".", 1)[-1].lower()
-            response_obj = _process_single_image(image_bytes, fmt, original_name)
+            response_obj = process_image_bytes(image_bytes, fmt, original_name)
             safe_response = json.loads(json.dumps(response_obj, default=str))
             return jsonify({"result": safe_response}), 200
         elif data.get("image_base64"):
@@ -901,7 +892,7 @@ def detect():
                 b64 = b64.split(";base64,", 1)[1]
             image_bytes = base64.b64decode(b64)
             original_name = f"image_base64_{int(time.time())}.png"
-            response_obj = _process_single_image(image_bytes, "png", original_name)
+            response_obj = process_image_bytes(image_bytes, "png", original_name)
             safe_response = json.loads(json.dumps(response_obj, default=str))
             return jsonify({"result": safe_response}), 200
         else:
@@ -911,6 +902,48 @@ def detect():
         tb = traceback.format_exc()
         msg = str(e)
         return jsonify({"error": msg, "trace": tb}), 500
+
+# ----------------- New endpoint: detect all files from images_multi -----------------
+@app.route("/detect_all", methods=["GET"])
+def detect_all():
+    """
+    Reads all images from IMAGES_DIR and runs the same detection pipeline on each.
+    Returns {"results": [ { "original_name": filename, "result": {...} }, ... ]}
+    """
+    try:
+        allowed = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"}
+        results = []
+        files = sorted(os.listdir(IMAGES_DIR))
+        for fname in files:
+            _, ext = os.path.splitext(fname)
+            if not ext:
+                continue
+            if ext.lower() not in allowed:
+                continue
+            candidate = os.path.join(IMAGES_DIR, fname)
+            if not os.path.isfile(candidate):
+                continue
+            try:
+                with open(candidate, "rb") as fh:
+                    image_bytes = fh.read()
+                fmt = ext.lstrip(".").lower() or "png"
+                response_obj = process_image_bytes(image_bytes, fmt, fname)
+                safe_response = json.loads(json.dumps(response_obj, default=str))
+                results.append({
+                    "original_name": fname,
+                    "result": safe_response
+                })
+            except Exception as e:
+                tb = traceback.format_exc()
+                results.append({
+                    "original_name": fname,
+                    "error": str(e),
+                    "trace": tb
+                })
+        return jsonify({"results": results}), 200
+    except Exception as e:
+        tb = traceback.format_exc()
+        return jsonify({"error": str(e), "trace": tb}), 500
 
 # ----------------- Frontend route -----------------
 @app.route('/')

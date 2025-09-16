@@ -47,20 +47,22 @@ except Exception:
 paddle_ocr = None
 try:
     from paddleocr import PaddleOCR
-    _paddle_use_gpu = os.environ.get("PADDLE_USE_GPU", "0") in ("1", "true", "True", "yes")
+    # Remove use_gpu configuration - instantiate PaddleOCR without GPU support
     _paddle_lang = os.environ.get("PADDLE_LANG", "en")
     _paddle_use_angle = os.environ.get("PADDLE_USE_ANGLE", "1") in ("1", "true", "True", "yes")
     try:
-        paddle_ocr = PaddleOCR(use_angle_cls=_paddle_use_angle, lang=_paddle_lang, use_gpu=_paddle_use_gpu)
+        # Try common constructor signature
+        paddle_ocr = PaddleOCR(use_angle_cls=_paddle_use_angle, lang=_paddle_lang)
         print("PaddleOCR initialized (use_angle_cls).")
     except TypeError:
         try:
-            paddle_ocr = PaddleOCR(use_textline_orientation=_paddle_use_angle, lang=_paddle_lang, use_gpu=_paddle_use_gpu)
+            # Alternate constructor name used in some versions
+            paddle_ocr = PaddleOCR(use_textline_orientation=_paddle_use_angle, lang=_paddle_lang)
             print("PaddleOCR initialized (use_textline_orientation).")
         except TypeError:
             try:
-                paddle_ocr = PaddleOCR(lang=_paddle_lang, use_gpu=_paddle_use_gpu)
-                print("PaddleOCR initialized (lang/use_gpu).")
+                paddle_ocr = PaddleOCR(lang=_paddle_lang)
+                print("PaddleOCR initialized (lang).")
             except Exception:
                 paddle_ocr = PaddleOCR()
                 print("PaddleOCR initialized (minimal constructor).")

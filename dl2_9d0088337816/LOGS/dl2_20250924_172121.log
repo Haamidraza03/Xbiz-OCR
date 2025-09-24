@@ -1,0 +1,83 @@
+2025-09-24 17:21:21,464 - INFO - Request ocr is running
+2025-09-24 17:21:21,464 - INFO - Starting detect processing for file: dl2.png
+2025-09-24 17:21:38,627 - DEBUG - OCR completed, result type: <class 'list'>
+2025-09-24 17:21:38,628 - DEBUG - Extracted 36 text lines
+2025-09-24 17:21:38,639 - DEBUG - OCR raw type: <class 'list'>
+2025-09-24 17:21:38,639 - DEBUG - First element type: <class 'paddlex.inference.pipelines.ocr.result.OCRResult'>
+2025-09-24 17:21:38,639 - DEBUG - First element keys: dict_keys(['input_path', 'page_index', 'doc_preprocessor_res', 'dt_polys', 'model_settings', 'text_det_params', 'text_type', 'text_rec_score_thresh', 'return_word_box', 'rec_texts', 'rec_scores', 'rec_polys', 'vis_fonts', 'textline_orientation_angles', 'rec_boxes'])
+2025-09-24 17:21:38,639 - DEBUG - Found 34 texts, 34 boxes, 34 scores
+2025-09-24 17:21:38,639 - DEBUG - Added text: 'THE UNION OF INDIA' with 4 vertices
+2025-09-24 17:21:38,640 - DEBUG - Added text: 'MAHARASHTRA STATE MOTOR DRIVING LICENCE' with 4 vertices
+2025-09-24 17:21:38,640 - DEBUG - Added text: 'DO/24-01-2007' with 4 vertices
+2025-09-24 17:21:38,640 - DEBUG - Added text: 'DL No MH03 20080022135' with 4 vertices
+2025-09-24 17:21:38,640 - DEBUG - Added text: 'Valid Till : 23-01-2027 (NT)' with 4 vertices
+2025-09-24 17:21:38,640 - DEBUG - Added text: '09-03-2011' with 4 vertices
+2025-09-24 17:21:38,640 - DEBUG - Added text: '(TR)' with 4 vertices
+2025-09-24 17:21:38,640 - DEBUG - Added text: 'AED 15-03-2008' with 4 vertices
+2025-09-24 17:21:38,640 - DEBUG - Added text: 'FORM 7' with 4 vertices
+2025-09-24 17:21:38,640 - DEBUG - Added text: 'RULE 16 (2' with 4 vertices
+2025-09-24 17:21:38,641 - DEBUG - Added text: 'AUTHORISATION TO DRIVE FOLLOWING CLASS' with 4 vertices
+2025-09-24 17:21:38,641 - DEBUG - Added text: 'OF VEHICLES THROUGHOUT INDIA' with 4 vertices
+2025-09-24 17:21:38,641 - DEBUG - Added text: 'COV' with 4 vertices
+2025-09-24 17:21:38,642 - DEBUG - Added text: 'DOI' with 4 vertices
+2025-09-24 17:21:38,642 - DEBUG - Added text: 'MCWG' with 4 vertices
+2025-09-24 17:21:38,642 - DEBUG - Added text: '24-01-2007' with 4 vertices
+2025-09-24 17:21:38,642 - DEBUG - Added text: 'LMV' with 4 vertices
+2025-09-24 17:21:38,642 - DEBUG - Added text: '24-01-2007' with 4 vertices
+2025-09-24 17:21:38,642 - DEBUG - Added text: 'TRANS' with 4 vertices
+2025-09-24 17:21:38,642 - DEBUG - Added text: '10-03-2008' with 4 vertices
+2025-09-24 17:21:38,642 - DEBUG - Added text: 'DOB :01-12-1987' with 4 vertices
+2025-09-24 17:21:38,642 - DEBUG - Added text: 'BG' with 4 vertices
+2025-09-24 17:21:38,643 - DEBUG - Added text: 'Name' with 4 vertices
+2025-09-24 17:21:38,643 - DEBUG - Added text: 'BABU KHAN' with 4 vertices
+2025-09-24 17:21:38,643 - DEBUG - Added text: 'S/DM of JABBAR KHAN' with 4 vertices
+2025-09-24 17:21:38,643 - DEBUG - Added text: 'Add KAMLA RAMAN NAGAR, BAIGANWADI,' with 4 vertices
+2025-09-24 17:21:38,643 - DEBUG - Added text: 'GOVANDI, MUMBAI' with 4 vertices
+2025-09-24 17:21:38,643 - DEBUG - Added text: 'BABUKHAN' with 4 vertices
+2025-09-24 17:21:38,643 - DEBUG - Added text: 'PIN 400043' with 4 vertices
+2025-09-24 17:21:38,643 - DEBUG - Added text: 'Signature &ID of' with 4 vertices
+2025-09-24 17:21:38,643 - DEBUG - Added text: 'Signature/Thumb' with 4 vertices
+2025-09-24 17:21:38,644 - DEBUG - Added text: 'MH03 2008261' with 4 vertices
+2025-09-24 17:21:38,644 - DEBUG - Added text: 'Impression of Holder' with 4 vertices
+2025-09-24 17:21:38,644 - DEBUG - Added text: 'Issuing Authority' with 4 vertices
+2025-09-24 17:21:38,644 - DEBUG - Extracted 34 words
+2025-09-24 17:21:38,644 - DEBUG - Extracted 34 words with bounding boxes
+2025-09-24 17:21:38,645 - DEBUG - Grouped into 19 lines
+2025-09-24 17:21:38,646 - DEBUG - Saved sorted text to dl2_9d0088337816\OUTPUT\OCR_SORTED\dl2_20250924_172121.txt with 19 lines
+2025-09-24 17:21:38,646 - DEBUG - Drawing 34 texts, 34 boxes
+2025-09-24 17:21:38,647 - DEBUG - Drawn box for 'THE UNION OF INDIA'
+2025-09-24 17:21:38,649 - DEBUG - Drawn box for 'MAHARASHTRA STATE MOTOR DRIVING LICENCE'
+2025-09-24 17:21:38,651 - DEBUG - Drawn box for 'DO/24-01-2007'
+2025-09-24 17:21:38,652 - DEBUG - Drawn box for 'DL No MH03 20080022135'
+2025-09-24 17:21:38,653 - DEBUG - Drawn box for 'Valid Till : 23-01-2027 (NT)'
+2025-09-24 17:21:38,656 - DEBUG - Drawn box for '09-03-2011'
+2025-09-24 17:21:38,657 - DEBUG - Drawn box for '(TR)'
+2025-09-24 17:21:38,658 - DEBUG - Drawn box for 'AED 15-03-2008'
+2025-09-24 17:21:38,659 - DEBUG - Drawn box for 'FORM 7'
+2025-09-24 17:21:38,661 - DEBUG - Drawn box for 'RULE 16 (2'
+2025-09-24 17:21:38,662 - DEBUG - Drawn box for 'AUTHORISATION TO DRIVE FOLLOWING CLASS'
+2025-09-24 17:21:38,663 - DEBUG - Drawn box for 'OF VEHICLES THROUGHOUT INDIA'
+2025-09-24 17:21:38,665 - DEBUG - Drawn box for 'COV'
+2025-09-24 17:21:38,666 - DEBUG - Drawn box for 'DOI'
+2025-09-24 17:21:38,667 - DEBUG - Drawn box for 'MCWG'
+2025-09-24 17:21:38,669 - DEBUG - Drawn box for '24-01-2007'
+2025-09-24 17:21:38,671 - DEBUG - Drawn box for 'LMV'
+2025-09-24 17:21:38,673 - DEBUG - Drawn box for '24-01-2007'
+2025-09-24 17:21:38,675 - DEBUG - Drawn box for 'TRANS'
+2025-09-24 17:21:38,676 - DEBUG - Drawn box for '10-03-2008'
+2025-09-24 17:21:38,677 - DEBUG - Drawn box for 'DOB :01-12-1987'
+2025-09-24 17:21:38,679 - DEBUG - Drawn box for 'BG'
+2025-09-24 17:21:38,680 - DEBUG - Drawn box for 'Name'
+2025-09-24 17:21:38,681 - DEBUG - Drawn box for 'BABU KHAN'
+2025-09-24 17:21:38,683 - DEBUG - Drawn box for 'S/DM of JABBAR KHAN'
+2025-09-24 17:21:38,684 - DEBUG - Drawn box for 'Add KAMLA RAMAN NAGAR, BAIGANWADI,'
+2025-09-24 17:21:38,686 - DEBUG - Drawn box for 'GOVANDI, MUMBAI'
+2025-09-24 17:21:38,688 - DEBUG - Drawn box for 'BABUKHAN'
+2025-09-24 17:21:38,689 - DEBUG - Drawn box for 'PIN 400043'
+2025-09-24 17:21:38,693 - DEBUG - Drawn box for 'Signature &ID of'
+2025-09-24 17:21:38,694 - DEBUG - Drawn box for 'Signature/Thumb'
+2025-09-24 17:21:38,695 - DEBUG - Drawn box for 'MH03 2008261'
+2025-09-24 17:21:38,697 - DEBUG - Drawn box for 'Impression of Holder'
+2025-09-24 17:21:38,698 - DEBUG - Drawn box for 'Issuing Authority'
+2025-09-24 17:21:38,732 - DEBUG - Saved annotated image to dl2_9d0088337816\OUTPUT\OCR_IMAGE\dl2_20250924_172121.png
+2025-09-24 17:21:38,764 - INFO - Detect processing completed for file: {name}

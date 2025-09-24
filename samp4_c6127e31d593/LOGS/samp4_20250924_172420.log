@@ -1,0 +1,97 @@
+2025-09-24 17:24:20,930 - INFO - Request ocr is running
+2025-09-24 17:24:20,931 - INFO - Starting detect processing for file: samp4.png
+2025-09-24 17:24:37,438 - DEBUG - OCR completed, result type: <class 'list'>
+2025-09-24 17:24:37,438 - DEBUG - Extracted 42 text lines
+2025-09-24 17:24:37,442 - DEBUG - OCR raw type: <class 'list'>
+2025-09-24 17:24:37,442 - DEBUG - First element type: <class 'paddlex.inference.pipelines.ocr.result.OCRResult'>
+2025-09-24 17:24:37,442 - DEBUG - First element keys: dict_keys(['input_path', 'page_index', 'doc_preprocessor_res', 'dt_polys', 'model_settings', 'text_det_params', 'text_type', 'text_rec_score_thresh', 'return_word_box', 'rec_texts', 'rec_scores', 'rec_polys', 'vis_fonts', 'textline_orientation_angles', 'rec_boxes'])
+2025-09-24 17:24:37,445 - DEBUG - Found 41 texts, 41 boxes, 41 scores
+2025-09-24 17:24:37,445 - DEBUG - Added text: '3TTCT' with 4 vertices
+2025-09-24 17:24:37,445 - DEBUG - Added text: 'FARHTST' with 4 vertices
+2025-09-24 17:24:37,445 - DEBUG - Added text: 'HRA' with 4 vertices
+2025-09-24 17:24:37,446 - DEBUG - Added text: 'HROOR' with 4 vertices
+2025-09-24 17:24:37,446 - DEBUG - Added text: 'NKe' with 4 vertices
+2025-09-24 17:24:37,446 - DEBUG - Added text: 'INCOME' with 4 vertices
+2025-09-24 17:24:37,446 - DEBUG - Added text: 'TAX' with 4 vertices
+2025-09-24 17:24:37,447 - DEBUG - Added text: 'DEPARTMENT' with 4 vertices
+2025-09-24 17:24:37,447 - DEBUG - Added text: 'GOVT.' with 4 vertices
+2025-09-24 17:24:37,447 - DEBUG - Added text: 'OF' with 4 vertices
+2025-09-24 17:24:37,447 - DEBUG - Added text: 'INDIA' with 4 vertices
+2025-09-24 17:24:37,447 - DEBUG - Added text: ' aq' with 4 vertices
+2025-09-24 17:24:37,447 - DEBUG - Added text: 'ReTreit' with 4 vertices
+2025-09-24 17:24:37,448 - DEBUG - Added text: 'SRGT' with 4 vertices
+2025-09-24 17:24:37,448 - DEBUG - Added text: 'FRou' with 4 vertices
+2025-09-24 17:24:37,448 - DEBUG - Added text: '$Ts' with 4 vertices
+2025-09-24 17:24:37,448 - DEBUG - Added text: 'Permanent Account' with 4 vertices
+2025-09-24 17:24:37,448 - DEBUG - Added text: 'Number' with 4 vertices
+2025-09-24 17:24:37,448 - DEBUG - Added text: 'Card' with 4 vertices
+2025-09-24 17:24:37,448 - DEBUG - Added text: 'NILPS5066N' with 4 vertices
+2025-09-24 17:24:37,448 - DEBUG - Added text: 'HIT' with 4 vertices
+2025-09-24 17:24:37,448 - DEBUG - Added text: 'Name' with 4 vertices
+2025-09-24 17:24:37,448 - DEBUG - Added text: 'ROHIT' with 4 vertices
+2025-09-24 17:24:37,449 - DEBUG - Added text: 'KUMAR' with 4 vertices
+2025-09-24 17:24:37,449 - DEBUG - Added text: 'SINGH' with 4 vertices
+2025-09-24 17:24:37,449 - DEBUG - Added text: 'faaT' with 4 vertices
+2025-09-24 17:24:37,449 - DEBUG - Added text: 'onT' with 4 vertices
+2025-09-24 17:24:37,449 - DEBUG - Added text: 'GIH' with 4 vertices
+2025-09-24 17:24:37,449 - DEBUG - Added text: '/ Father's' with 4 vertices
+2025-09-24 17:24:37,450 - DEBUG - Added text: 'Name' with 4 vertices
+2025-09-24 17:24:37,450 - DEBUG - Added text: 'LAKHAN' with 4 vertices
+2025-09-24 17:24:37,450 - DEBUG - Added text: 'SINGH' with 4 vertices
+2025-09-24 17:24:37,450 - DEBUG - Added text: 'Rehit Mt' with 4 vertices
+2025-09-24 17:24:37,450 - DEBUG - Added text: 'G4' with 4 vertices
+2025-09-24 17:24:37,450 - DEBUG - Added text: 'ait' with 4 vertices
+2025-09-24 17:24:37,450 - DEBUG - Added text: 'arira' with 4 vertices
+2025-09-24 17:24:37,451 - DEBUG - Added text: '/ Date' with 4 vertices
+2025-09-24 17:24:37,451 - DEBUG - Added text: 'of Birth' with 4 vertices
+2025-09-24 17:24:37,451 - DEBUG - Added text: '70999' with 4 vertices
+2025-09-24 17:24:37,451 - DEBUG - Added text: '01/01/2002' with 4 vertices
+2025-09-24 17:24:37,451 - DEBUG - Added text: 'algR / Signature' with 4 vertices
+2025-09-24 17:24:37,451 - DEBUG - Extracted 41 words
+2025-09-24 17:24:37,451 - DEBUG - Extracted 41 words with bounding boxes
+2025-09-24 17:24:37,451 - DEBUG - Grouped into 12 lines
+2025-09-24 17:24:37,452 - DEBUG - Saved sorted text to samp4_c6127e31d593\OUTPUT\OCR_SORTED\samp4_20250924_172420.txt with 12 lines
+2025-09-24 17:24:37,453 - DEBUG - Drawing 41 texts, 41 boxes
+2025-09-24 17:24:37,455 - DEBUG - Drawn box for '3TTCT'
+2025-09-24 17:24:37,456 - DEBUG - Drawn box for 'FARHTST'
+2025-09-24 17:24:37,457 - DEBUG - Drawn box for 'HRA'
+2025-09-24 17:24:37,460 - DEBUG - Drawn box for 'HROOR'
+2025-09-24 17:24:37,461 - DEBUG - Drawn box for 'NKe'
+2025-09-24 17:24:37,463 - DEBUG - Drawn box for 'INCOME'
+2025-09-24 17:24:37,464 - DEBUG - Drawn box for 'TAX'
+2025-09-24 17:24:37,465 - DEBUG - Drawn box for 'DEPARTMENT'
+2025-09-24 17:24:37,467 - DEBUG - Drawn box for 'GOVT.'
+2025-09-24 17:24:37,468 - DEBUG - Drawn box for 'OF'
+2025-09-24 17:24:37,470 - DEBUG - Drawn box for 'INDIA'
+2025-09-24 17:24:37,471 - DEBUG - Drawn box for 'aq'
+2025-09-24 17:24:37,472 - DEBUG - Drawn box for 'ReTreit'
+2025-09-24 17:24:37,474 - DEBUG - Drawn box for 'SRGT'
+2025-09-24 17:24:37,476 - DEBUG - Drawn box for 'FRou'
+2025-09-24 17:24:37,478 - DEBUG - Drawn box for '$Ts'
+2025-09-24 17:24:37,479 - DEBUG - Drawn box for 'Permanent Account'
+2025-09-24 17:24:37,481 - DEBUG - Drawn box for 'Number'
+2025-09-24 17:24:37,482 - DEBUG - Drawn box for 'Card'
+2025-09-24 17:24:37,483 - DEBUG - Drawn box for 'NILPS5066N'
+2025-09-24 17:24:37,485 - DEBUG - Drawn box for 'HIT'
+2025-09-24 17:24:37,486 - DEBUG - Drawn box for 'Name'
+2025-09-24 17:24:37,488 - DEBUG - Drawn box for 'ROHIT'
+2025-09-24 17:24:37,489 - DEBUG - Drawn box for 'KUMAR'
+2025-09-24 17:24:37,491 - DEBUG - Drawn box for 'SINGH'
+2025-09-24 17:24:37,492 - DEBUG - Drawn box for 'faaT'
+2025-09-24 17:24:37,494 - DEBUG - Drawn box for 'onT'
+2025-09-24 17:24:37,496 - DEBUG - Drawn box for 'GIH'
+2025-09-24 17:24:37,497 - DEBUG - Drawn box for '/ Father's'
+2025-09-24 17:24:37,498 - DEBUG - Drawn box for 'Name'
+2025-09-24 17:24:37,499 - DEBUG - Drawn box for 'LAKHAN'
+2025-09-24 17:24:37,501 - DEBUG - Drawn box for 'SINGH'
+2025-09-24 17:24:37,502 - DEBUG - Drawn box for 'Rehit Mt'
+2025-09-24 17:24:37,503 - DEBUG - Drawn box for 'G4'
+2025-09-24 17:24:37,505 - DEBUG - Drawn box for 'ait'
+2025-09-24 17:24:37,506 - DEBUG - Drawn box for 'arira'
+2025-09-24 17:24:37,508 - DEBUG - Drawn box for '/ Date'
+2025-09-24 17:24:37,509 - DEBUG - Drawn box for 'of Birth'
+2025-09-24 17:24:37,512 - DEBUG - Drawn box for '70999'
+2025-09-24 17:24:37,513 - DEBUG - Drawn box for '01/01/2002'
+2025-09-24 17:24:37,515 - DEBUG - Drawn box for 'algR / Signature'
+2025-09-24 17:24:37,552 - DEBUG - Saved annotated image to samp4_c6127e31d593\OUTPUT\OCR_IMAGE\samp4_20250924_172420.png
+2025-09-24 17:24:37,587 - INFO - Detect processing completed for file: {name}

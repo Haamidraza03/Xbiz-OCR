@@ -1,0 +1,41 @@
+2025-09-24 17:24:04,872 - INFO - Request ocr is running
+2025-09-24 17:24:04,874 - INFO - Starting detect processing for file: adharsamp.png
+2025-09-24 17:24:20,824 - DEBUG - OCR completed, result type: <class 'list'>
+2025-09-24 17:24:20,824 - DEBUG - Extracted 16 text lines
+2025-09-24 17:24:20,830 - DEBUG - OCR raw type: <class 'list'>
+2025-09-24 17:24:20,830 - DEBUG - First element type: <class 'paddlex.inference.pipelines.ocr.result.OCRResult'>
+2025-09-24 17:24:20,830 - DEBUG - First element keys: dict_keys(['input_path', 'page_index', 'doc_preprocessor_res', 'dt_polys', 'model_settings', 'text_det_params', 'text_type', 'text_rec_score_thresh', 'return_word_box', 'rec_texts', 'rec_scores', 'rec_polys', 'vis_fonts', 'textline_orientation_angles', 'rec_boxes'])
+2025-09-24 17:24:20,830 - DEBUG - Found 13 texts, 13 boxes, 13 scores
+2025-09-24 17:24:20,831 - DEBUG - Added text: 'ART' with 4 vertices
+2025-09-24 17:24:20,831 - DEBUG - Added text: 'HRT' with 4 vertices
+2025-09-24 17:24:20,831 - DEBUG - Added text: 'GOVERNMENT' with 4 vertices
+2025-09-24 17:24:20,831 - DEBUG - Added text: 'OF INDIA' with 4 vertices
+2025-09-24 17:24:20,832 - DEBUG - Added text: '374R' with 4 vertices
+2025-09-24 17:24:20,832 - DEBUG - Added text: 'Aachal kumari' with 4 vertices
+2025-09-24 17:24:20,832 - DEBUG - Added text: 'Hh:Ph' with 4 vertices
+2025-09-24 17:24:20,832 - DEBUG - Added text: 'Father :Manoj Ram' with 4 vertices
+2025-09-24 17:24:20,832 - DEBUG - Added text: ' f/DOB: 04/12/2006' with 4 vertices
+2025-09-24 17:24:20,832 - DEBUG - Added text: 'cll/Female' with 4 vertices
+2025-09-24 17:24:20,832 - DEBUG - Added text: '4221 5455 0524' with 4 vertices
+2025-09-24 17:24:20,832 - DEBUG - Added text: 'L  e-l' with 4 vertices
+2025-09-24 17:24:20,832 - DEBUG - Added text: '3TFT' with 4 vertices
+2025-09-24 17:24:20,832 - DEBUG - Extracted 13 words
+2025-09-24 17:24:20,832 - DEBUG - Extracted 13 words with bounding boxes
+2025-09-24 17:24:20,833 - DEBUG - Grouped into 10 lines
+2025-09-24 17:24:20,834 - DEBUG - Saved sorted text to adharsamp_f73165be1c48\OUTPUT\OCR_SORTED\adharsamp_20250924_172404.txt with 10 lines
+2025-09-24 17:24:20,834 - DEBUG - Drawing 13 texts, 13 boxes
+2025-09-24 17:24:20,836 - DEBUG - Drawn box for 'ART'
+2025-09-24 17:24:20,838 - DEBUG - Drawn box for 'HRT'
+2025-09-24 17:24:20,840 - DEBUG - Drawn box for 'GOVERNMENT'
+2025-09-24 17:24:20,841 - DEBUG - Drawn box for 'OF INDIA'
+2025-09-24 17:24:20,842 - DEBUG - Drawn box for '374R'
+2025-09-24 17:24:20,845 - DEBUG - Drawn box for 'Aachal kumari'
+2025-09-24 17:24:20,847 - DEBUG - Drawn box for 'Hh:Ph'
+2025-09-24 17:24:20,848 - DEBUG - Drawn box for 'Father :Manoj Ram'
+2025-09-24 17:24:20,850 - DEBUG - Drawn box for 'f/DOB: 04/12/2006'
+2025-09-24 17:24:20,851 - DEBUG - Drawn box for 'cll/Female'
+2025-09-24 17:24:20,854 - DEBUG - Drawn box for '4221 5455 0524'
+2025-09-24 17:24:20,855 - DEBUG - Drawn box for 'L  e-l'
+2025-09-24 17:24:20,856 - DEBUG - Drawn box for '3TFT'
+2025-09-24 17:24:20,894 - DEBUG - Saved annotated image to adharsamp_f73165be1c48\OUTPUT\OCR_IMAGE\adharsamp_20250924_172404.png
+2025-09-24 17:24:20,927 - INFO - Detect processing completed for file: {name}

@@ -1,28 +1,27 @@
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 
-RUN apt-get update \
-&& apt-get install -y --no-install-recommends \
+# Install small set of system deps required by OpenCV/Pillow, ffmpeg for media
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    git \
-    wget \
-    ca-certificates \
-    libgl1 \
+    ffmpeg \
     libglib2.0-0 \
     libsm6 \
     libxrender1 \
     libxext6 \
-    libsndfile1 \
-    pkg-config \
- && rm -rf /var/lib/apt/lists/*
+    libgl1 \
+    && rm -rf /var/lib/apt/lists/*
 
+# Copy requirements and install
 COPY requirements.txt .
+RUN pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
 
-RUN pip install --no-cache-dir -r requirements.txt
-
+# Copy app sources
 COPY . .
 
+# Expose default Flask port (change if needed)
 EXPOSE 5000
 
+# Start your app
 CMD ["python", "main.py"]

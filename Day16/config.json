@@ -1,6 +1,0 @@
-{
-  "username": "hrk01",
-  "password": "hrk1234",
-  "jwt_secret": "hrk_secret_key",
-  "jwt_exp_seconds": 3600
-}

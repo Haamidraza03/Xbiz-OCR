@@ -3,7 +3,7 @@
   "document_type": "AADHAAR_CARD",
   "cleaned_text": [],
   "detected_text": [
-    "adharsamp_eef69c517a98\\tmp_adharsamp_20250929_100158.png",
+    "adharsamp_60a190279b36\\tmp_adharsamp_20250929_123028.png",
     "min",
     "general",
     "ARA",
@@ -20,5 +20,5 @@
     "e  f b-",
     "3TT4R"
   ],
-  "sorted_text_path": "adharsamp_eef69c517a98\\OUTPUT\\OCR_SORTED\\adharsamp_20250929_100158.txt"
+  "sorted_text_path": "adharsamp_60a190279b36\\OUTPUT\\OCR_SORTED\\adharsamp_20250929_123028.txt"
 }

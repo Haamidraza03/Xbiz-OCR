@@ -1,0 +1,481 @@
+import cv2
+import mediapipe as mp
+import numpy as np
+import os
+import time
+from math import hypot
+from ultralytics import YOLO
+
+# ------------ CONFIG -------------
+OUTPUT_DIR = "Output"
+BLINK_DIR = os.path.join(OUTPUT_DIR, "blinks")
+SMILE_DIR = os.path.join(OUTPUT_DIR, "smiles")
+MOTION_DIR = os.path.join(OUTPUT_DIR, "motion")
+# --- NEW FAKE FACE CONFIG ---
+FAKE_FACE_DIR = os.path.join(OUTPUT_DIR, "fake_faces")
+# ---
+os.makedirs(BLINK_DIR, exist_ok=True)
+os.makedirs(SMILE_DIR, exist_ok=True)
+os.makedirs(MOTION_DIR, exist_ok=True)
+os.makedirs(FAKE_FACE_DIR, exist_ok=True)
+
+# face mesh & drawing
+mp_face_mesh = mp.solutions.face_mesh
+mp_drawing = mp.solutions.drawing_utils
+try:
+    mp_drawing_styles = mp.solutions.drawing_styles
+    HAVE_DRAWING_STYLES = True
+except Exception:
+    mp_drawing_styles = None
+    HAVE_DRAWING_STYLES = False
+
+# Landmark indices for EAR (MediaPipe indices)
+RIGHT_EYE_IDX = [33, 160, 158, 133, 153, 144]   # right eye: p1,p2,p3,p4,p5,p6
+LEFT_EYE_IDX  = [362, 385, 387, 263, 373, 380]  # left eye
+
+# Mouth landmarks (use some common outer mouth indexes to build ROI)
+MOUTH_LANDMARKS = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308, 78, 95, 88]
+MOUTH_LEFT = 61
+MOUTH_RIGHT = 291
+MOUTH_TOP = 13
+MOUTH_BOTTOM = 14
+
+# thresholds / tuning (tweak for your webcam/lighting)
+EAR_THRESH = 0.21             # if EAR below => eye closed (blink)
+EAR_CONSEC_FRAMES = 3         # consecutive frames to count a blink
+SMILE_WIDTH_RATIO = 0.45      # mouth_width / face_box_width (primary)
+SMILE_OPEN_RATIO = 0.28       # mouth_open / mouth_width to avoid wide-open mouth
+MOVE_RATIO = 0.08             # fraction of face box width considered "moved"
+SAVE_BLOCK_FRAMES = 12        # block repeated saves for same face/event (frames)
+
+# Extra heuristics for small faces/screens
+SMALL_FACE_PIX = 140          # face box width (pixels) below which we use pixel thresholds
+SMALL_FACE_MOUTH_PIX_RATIO = 0.30  # mouth width pixels relative to face width for small faces
+
+# Real vs Fake smile parameters (kept for downstream helpers if needed)
+TEETH_V_THRESHOLD = 150       # HSV V brightness threshold for "bright" pixels (teeth)
+TEETH_S_THRESHOLD = 100       # HSV S max for low-saturation (teeth)
+TEETH_RATIO_THRESHOLD = 0.12  # fraction of mouth pixels required to consider teeth visible
+SQUINT_EAR_THRESH = 0.25      # EAR less than this considered "squinted" (not fully closed)
+
+FACE_SCALE = 0.6              # process smaller frame for speed (0.5 - 0.8 recommended)
+YOLO_SKIP_FRAMES = 6          # skip YOLO every N frames for speed (increase to reduce lag)
+
+FONT = cv2.FONT_HERSHEY_SIMPLEX
+
+# ------------ HELPERS -------------
+def now_ts():
+    return time.strftime("%Y%m%d_%H%M%S")
+
+def save_labeled_frame(frame, label, subfolder, color=(0,255,0)):
+    """Draw label onto a copy and save to folder."""
+    out = frame.copy()
+    cv2.putText(out, label, (50,50), FONT, 1.2, color, 3, cv2.LINE_AA)
+    filename = os.path.join(subfolder, f"{label.replace(' ','_')}_{now_ts()}.jpg")
+    cv2.imwrite(filename, out)
+    print(f"[SAVED] {filename}")
+
+def to_pixel_coords(landmark, image_w, image_h):
+    # landmark.x/y are normalized (0..1) regardless of the input size passed to MediaPipe,
+    # so multiplying by the original frame w/h works fine even if we processed a resized image.
+    return int(landmark.x * image_w), int(landmark.y * image_h)
+
+def euclid(a, b):
+    return hypot(a[0]-b[0], a[1]-b[1])
+
+def eye_aspect_ratio(landmarks, image_w, image_h, idxs):
+    # idxs = [p1,p2,p3,p4,p5,p6]
+    try:
+        p1 = to_pixel_coords(landmarks[idxs[0]], image_w, image_h)
+        p2 = to_pixel_coords(landmarks[idxs[1]], image_w, image_h)
+        p3 = to_pixel_coords(landmarks[idxs[2]], image_w, image_h)
+        p4 = to_pixel_coords(landmarks[idxs[3]], image_w, image_h)
+        p5 = to_pixel_coords(landmarks[idxs[4]], image_w, image_h)
+        p6 = to_pixel_coords(landmarks[idxs[5]], image_w, image_h)
+    except Exception:
+        return 0.0
+    A = euclid(p2, p6)
+    B = euclid(p3, p5)
+    C = euclid(p1, p4)
+    if C == 0:
+        return 0.0
+    ear = (A + B) / (2.0 * C)
+    return ear
+
+def mouth_has_teeth_from_landmarks(frame, landmarks, image_w, image_h, face_bbox):
+    """
+    Extract a mouth ROI using landmark indices, convert to HSV and detect
+    bright low-saturation pixels that likely correspond to teeth.
+    Returns True if teeth ratio >= TEETH_RATIO_THRESHOLD.
+    """
+    coords = []
+    for idx in MOUTH_LANDMARKS:
+        try:
+            coords.append(to_pixel_coords(landmarks[idx], image_w, image_h))
+        except Exception:
+            continue
+    if not coords:
+        return False
+
+    xs = [p[0] for p in coords]
+    ys = [p[1] for p in coords]
+    x_min = max(0, min(xs) - 2)
+    x_max = min(image_w, max(xs) + 2)
+    y_min = max(0, min(ys) - 2)
+    y_max = min(image_h, max(ys) + 2)
+
+    bx, by, bw, bh = face_bbox
+    pad_x = max(4, int(bw * 0.03))
+    pad_y = max(3, int(bh * 0.02))
+    x1 = max(0, x_min - pad_x)
+    y1 = max(0, y_min - pad_y)
+    x2 = min(image_w, x_max + pad_x)
+    y2 = min(image_h, y_max + pad_y)
+
+    if x2 - x1 <= 2 or y2 - y1 <= 2:
+        return False
+
+    mouth_roi = frame[y1:y2, x1:x2]
+    if mouth_roi.size == 0:
+        return False
+
+    hsv = cv2.cvtColor(mouth_roi, cv2.COLOR_BGR2HSV)
+    h_ch, s_ch, v_ch = cv2.split(hsv)
+    bright_mask = (v_ch >= TEETH_V_THRESHOLD) & (s_ch <= TEETH_S_THRESHOLD)
+    bright_count = np.count_nonzero(bright_mask)
+    total = mouth_roi.shape[0] * mouth_roi.shape[1]
+    ratio = float(bright_count) / float(total) if total > 0 else 0.0
+
+    return ratio >= TEETH_RATIO_THRESHOLD
+
+# ------------ MAIN -------------
+def main():
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("Cannot open camera")
+        return
+
+    model = YOLO("yolov8n.pt")  # Load YOLOv8 nano pre-trained on COCO
+
+    with mp_face_mesh.FaceMesh(static_image_mode=False,
+                               max_num_faces=4,
+                               refine_landmarks=False,
+                               min_detection_confidence=0.5,
+                               min_tracking_confidence=0.5) as face_mesh:
+
+        faces_state = {}   # id -> state dict
+        next_face_id = 0
+        frame_idx = 0
+        previous_screen_rects = []
+        print("Starting. Press 'q' to quit.")
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame = cv2.flip(frame, 1)  # mirror for webcam
+            frame_idx += 1
+            h, w = frame.shape[:2]
+
+            # Resize a smaller copy for inference to speed things up, but keep original for drawing and saving.
+            small_w = max(1, int(w * FACE_SCALE))
+            small_h = max(1, int(h * FACE_SCALE))
+            frame_small = cv2.resize(frame, (small_w, small_h))
+
+            # Convert small image to RGB for mediapipe
+            img_rgb_small = cv2.cvtColor(frame_small, cv2.COLOR_BGR2RGB)
+
+            # YOLO object detection for screens (run on small frame and scale boxes)
+            if frame_idx % YOLO_SKIP_FRAMES == 0:
+                yolo_results = model(frame_small)  # run on small image
+                screen_rects = []
+                for r in yolo_results:
+                    for box in r.boxes:
+                        cls_id = int(box.cls)
+                        # 62: tv/monitor, 63: laptop, 67: cell phone in COCO
+                        if cls_id in [62, 63, 67]:
+                            x1, y1, x2, y2 = map(int, box.xyxy[0].cpu().numpy())
+                            # scale back to original frame coordinates
+                            sx = int((x1 / small_w) * w)
+                            sy = int((y1 / small_h) * h)
+                            sw = int(((x2 - x1) / small_w) * w)
+                            sh = int(((y2 - y1) / small_h) * h)
+                            screen_rects.append((sx, sy, sw, sh))
+                previous_screen_rects = screen_rects
+            else:
+                screen_rects = previous_screen_rects
+
+            # Visualize YOLO detections
+            for sx, sy, sw, sh in screen_rects:
+                cv2.rectangle(frame, (sx, sy), (sx + sw, sy + sh), (0, 0, 255), 2)
+
+            # FaceMesh on the small image (faster). landmark normalized coords map to original size when multiplied by w/h.
+            results = face_mesh.process(img_rgb_small)
+
+            detections = []
+            if results.multi_face_landmarks:
+                for face_landmarks in results.multi_face_landmarks:
+                    pts = []
+                    xs = []
+                    ys = []
+                    # landmarks are normalized; using original w/h maps to original coords
+                    for lm in face_landmarks.landmark:
+                        x_px = int(lm.x * w)
+                        y_px = int(lm.y * h)
+                        pts.append((x_px, y_px))
+                        xs.append(x_px)
+                        ys.append(y_px)
+                    x_min, x_max = min(xs), max(xs)
+                    y_min, y_max = min(ys), max(ys)
+                    bbox_w = x_max - x_min
+                    bbox_h = y_max - y_min
+                    center = (int((x_min + x_max) / 2), int((y_min + y_max) / 2))
+
+                    detections.append({
+                        'landmark_obj': face_landmarks,
+                        'landmarks': face_landmarks.landmark,
+                        'pts': pts,
+                        'bbox': (x_min, y_min, bbox_w, bbox_h),
+                        'center': center
+                    })
+
+            # --- simple tracker by center ---
+            matched = set()
+            updated_states = {}
+            for det in detections:
+                cx, cy = det['center']
+                bx, by, bw, bh = det['bbox']
+                best_id = None
+                best_dist = None
+                match_thresh = max(20, bw * 0.6)
+                for fid, st in faces_state.items():
+                    prev_c = st['center']
+                    d = euclid(prev_c, (cx, cy))
+                    if d <= match_thresh and (best_dist is None or d < best_dist):
+                        best_dist = d
+                        best_id = fid
+
+                if best_id is None:
+                    fid = next_face_id
+                    next_face_id += 1
+                    st = {
+                        'id': fid,
+                        'center': (cx, cy),
+                        'bbox': (bx, by, bw, bh),
+                        'last_seen': frame_idx,
+                        'blink_counter': 0,
+                        'smile_counter': 0,
+                        'blink_count': 0,
+                        'last_saved_event_frame': 0,
+                        'is_fake_face': False, # Initialize new state variable
+                    }
+                else:
+                    fid = best_id
+                    st = faces_state[fid]
+                    st['center'] = (cx, cy)
+                    st['bbox']= (bx, by, bw, bh)
+                    st['last_seen'] = frame_idx
+                # is_fake_face state is updated in the analysis loop below
+
+                st['det'] = det
+                updated_states[fid] = st
+                matched.add(fid)
+
+            # keep unmatched recently seen faces briefly
+            TIMEOUT = 12
+            for fid, st in list(faces_state.items()):
+                if fid not in matched and (frame_idx - st.get('last_seen', 0) <= TIMEOUT):
+                    updated_states[fid] = st
+
+            faces_state = updated_states
+
+            # Determine the Fake Face status based on whether face is inside a detected screen
+            is_any_fake_face = False
+            for fid, st in faces_state.items():
+                if 'det' in st:
+                    bx, by, bw, bh = st['bbox']
+                    st['is_fake_face'] = False
+                    for sx, sy, sw, sh in screen_rects:
+                        # check containment (face completely inside screen bounding box)
+                        if bx >= sx and by >= sy and bx + bw <= sx + sw and by + bh <= sy + sh:
+                            st['is_fake_face'] = True
+                            is_any_fake_face = True
+                            break
+
+            # --- analyze each tracked face ---
+            for fid, st in faces_state.items():
+                if 'det' not in st:
+                    continue
+                det = st['det']
+                landmark_obj = det['landmark_obj']
+                landmarks = det['landmarks']
+                bx, by, bw, bh = st['bbox']
+                cx, cy = st['center']
+
+                # Determine drawing color based on FAKE FACE status
+                draw_color = (0, 255, 0) # Green for normal/real face
+                if st['is_fake_face']:
+                    draw_color = (255, 0, 0) # Blue for fake face
+
+                # draw bbox & ID (Use dynamic color)
+                cv2.rectangle(frame, (bx, by), (bx + bw, by + bh), draw_color, 1)
+                cv2.putText(frame, f"ID:{fid}", (bx, by - 8), FONT, 0.6, (0,255,255), 2)
+
+                # draw face mesh overlay (kept lightweight)
+                try:
+                    if HAVE_DRAWING_STYLES:
+                        mp_drawing.draw_landmarks(
+                            image=frame,
+                            landmark_list=landmark_obj,
+                            connections=mp_face_mesh.FACEMESH_TESSELATION,
+                            landmark_drawing_spec=None,
+                            connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_tesselation_style()
+                        )
+                    else:
+                        mp_drawing.draw_landmarks(
+                            image=frame,
+                            landmark_list=landmark_obj,
+                            connections=mp_face_mesh.FACEMESH_TESSELATION,
+                            landmark_drawing_spec=mp_drawing.DrawingSpec(color=(0,255,0), thickness=1, circle_radius=1),
+                            connection_drawing_spec=mp_drawing.DrawingSpec(color=(0,200,200), thickness=1, circle_radius=1)
+                        )
+                except Exception:
+                    pass
+
+                # --- FAKE FACE DETECTION VISUALIZATION AND SAVING ---
+                if st['is_fake_face']:
+                    label = f"FAKE_FACE_ID{fid}"
+                    cv2.putText(frame, "FAKE FACE", (bx, by + bh + 42), FONT, 0.8, draw_color, 2)
+                    if (frame_idx - st.get('last_saved_event_frame', 0) > SAVE_BLOCK_FRAMES):
+                        save_labeled_frame(frame, label, FAKE_FACE_DIR, color=draw_color)
+                        st['last_saved_event_frame'] = frame_idx
+                    # do not 'continue' here: we still allow smile/blink/move detection,
+                    # but smiles from these faces will be saved as FAKE_SMILE (see below)
+
+                # --- MOVEMENT detection (compute early so blink logic can use it) ---
+                moved = False
+                prev_center = st.get('center_prev', None)
+                if prev_center is not None:
+                    dist_moved = euclid(prev_center, (cx, cy))
+                else:
+                    dist_moved = 0.0
+                move_thresh = bw * MOVE_RATIO
+                if dist_moved > move_thresh and (frame_idx - st.get('last_saved_event_frame', 0) > SAVE_BLOCK_FRAMES):
+                    moved = True
+
+                # --- BLINK detection (EAR) ---
+                # ensure moved is defined before using it (BUG FIX)
+                ear_right = eye_aspect_ratio(landmarks, w, h, RIGHT_EYE_IDX)
+                ear_left = eye_aspect_ratio(landmarks, w, h, LEFT_EYE_IDX)
+                ear = (ear_left + ear_right) / 2.0
+
+                blink_detected = False
+                if ear < EAR_THRESH:
+                    st['blink_counter'] = st.get('blink_counter', 0) + 1
+                else:
+                    # only count as blink if eyes closed for enough frames and face didn't move
+                    if st.get('blink_counter', 0) >= EAR_CONSEC_FRAMES and not moved:
+                        blink_detected = True
+                    st['blink_counter'] = 0
+
+                # increment persistent blink count when a blink is detected
+                if blink_detected:
+                    st['blink_count'] = st.get('blink_count', 0) + 1
+
+                # --- SMILE detection using mouth landmarks ---
+                try:
+                    p_left = to_pixel_coords(landmarks[MOUTH_LEFT], w, h)
+                    p_right = to_pixel_coords(landmarks[MOUTH_RIGHT], w, h)
+                    p_top = to_pixel_coords(landmarks[MOUTH_TOP], w, h)
+                    p_bottom = to_pixel_coords(landmarks[MOUTH_BOTTOM], w, h)
+                except Exception:
+                    st['smile_counter'] = 0
+                    p_left = p_right = p_top = p_bottom = (0,0)
+
+                mouth_width = euclid(p_left, p_right)
+                mouth_open = euclid(p_top, p_bottom)
+                mouth_width_ratio = mouth_width / float(bw + 1e-6)
+                mouth_open_ratio = mouth_open / float(mouth_width + 1e-6)
+
+                smile_detected = False
+
+                # Adaptive thresholds:
+                # - For small faces use absolute pixel threshold
+                # - For fake faces relax the ratio a bit
+                effective_smile_ratio = SMILE_WIDTH_RATIO * (0.90 if st['is_fake_face'] else 1.0)
+                effective_small_face_pixel_ratio = SMALL_FACE_MOUTH_PIX_RATIO * (0.85 if st['is_fake_face'] else 1.0)
+
+                small_face_mode = (bw < SMALL_FACE_PIX)
+
+                if small_face_mode:
+                    # require a minimum mouth pixel width
+                    required_mouth_px = max(14, int(bw * effective_small_face_pixel_ratio))
+                    if mouth_width >= required_mouth_px and mouth_open_ratio < SMILE_OPEN_RATIO:
+                        st['smile_counter'] = st.get('smile_counter', 0) + 1
+                    else:
+                        st['smile_counter'] = 0
+                else:
+                    if mouth_width_ratio >= effective_smile_ratio and mouth_open_ratio < SMILE_OPEN_RATIO:
+                        st['smile_counter'] = st.get('smile_counter', 0) + 1
+                    else:
+                        st['smile_counter'] = 0
+
+                # Extra fallback: if not triggered but mouth_has_teeth suggests teeth visible, count as smile
+                if st.get('smile_counter', 0) < 3:
+                    # only check fallback rarely for speed
+                    if frame_idx % 4 == 0 and mouth_has_teeth_from_landmarks(frame, landmarks, w, h, st['bbox']):
+                        st['smile_counter'] = st.get('smile_counter', 0) + 1
+
+                if st.get('smile_counter', 0) >= 3:
+                    smile_detected = True
+                    st['smile_counter'] = 0
+
+                # --- If smile detected, classify as FAKE_SMILE if face is fake, else REAL_SMILE ---
+                if smile_detected and (frame_idx - st.get('last_saved_event_frame', 0) > SAVE_BLOCK_FRAMES):
+                    if st['is_fake_face']:
+                        label = f"FAKE_SMILE_ID{fid}"
+                        save_labeled_frame(frame, label, color=(0,0,255))
+                        # keep a copy in SMILE_DIR too (optional)
+                        save_labeled_frame(frame, f"SMILE_ID{fid}", SMILE_DIR, color=(0,0,255))
+                        cv2.putText(frame, "FAKE_SMILE", (bx, by + bh + 30), FONT, 0.8, (0,0,255), 2)
+                    else:
+                        label = f"REAL_SMILE_ID{fid}"
+                        save_labeled_frame(frame, label, SMILE_DIR, color=(0,255,0))
+                        save_labeled_frame(frame, f"SMILE_ID{fid}", SMILE_DIR, color=(0,255,0))
+                        cv2.putText(frame, "REAL_SMILE", (bx, by + bh + 30), FONT, 0.8, (0,255,0), 2)
+                    st['last_saved_event_frame'] = frame_idx
+
+                # --- Save blink or moved events ---
+                if blink_detected and (frame_idx - st.get('last_saved_event_frame', 0) > SAVE_BLOCK_FRAMES):
+                    label = f"BLINK_ID{fid}"
+                    save_labeled_frame(frame, label, BLINK_DIR, color=(0,0,255))  # red
+                    st['last_saved_event_frame'] = frame_idx
+                    cv2.putText(frame, "BLINK", (bx, by + bh + 30), FONT, 0.8, (0,0,255), 2)
+                else:
+                    if blink_detected:
+                        cv2.putText(frame, "BLINK", (bx, by + bh + 30), FONT, 0.8, (0,0,255), 2)
+
+                if moved and (frame_idx - st.get('last_saved_event_frame', 0) > SAVE_BLOCK_FRAMES):
+                    label = f"MOVED_ID{fid}"
+                    save_labeled_frame(frame, label, MOTION_DIR, color=(0,255,0))
+                    st['last_saved_event_frame'] = frame_idx
+                    cv2.putText(frame, "MOVED", (bx, by + bh + 30), FONT, 0.8, (0,255,0), 2)
+
+                # debug overlays
+                cv2.putText(frame, f"EAR:{ear:.2f}", (bx, by + bh + 10), FONT, 0.5, (255,255,255), 2)
+                cv2.putText(frame, f"MWR:{mouth_width_ratio:.2f}", (bx, by + bh + 22), FONT, 0.5, (255,255,255), 2)
+                # blink counter display removed as requested
+
+                st['center_prev'] = (cx, cy)
+
+            # show final frame
+            cv2.imshow("MediaPipe FaceMesh - real vs fake smile + blink count", frame)
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()
